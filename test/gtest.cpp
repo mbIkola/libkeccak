@@ -25,6 +25,7 @@ public:
     inline uint8_t *hex2bin( string input) {
 
         uint8_t * res = new uint8_t[input.length() / 2];
+        memset(res, 0, input.length()/2);
         const char *i = input.c_str();
         int offset = 0;
 
@@ -59,7 +60,7 @@ protected:
 
     size_t digest_size ;
 
-    uint8_t *input_binary = NULL;
+
     uint8_t *digest_binary = NULL;
 
 
@@ -68,7 +69,6 @@ protected:
     }
     virtual void TearDown() {
         if ( digest_binary ) delete[] digest_binary;
-        if ( input_binary ) delete[] input_binary;
 
         digest_binary = NULL;
     }
@@ -84,8 +84,9 @@ public:
     Keccak1600Test() : HashShitFuncTestTemplate() { digest_size = 200; };
 protected:
     string calc(string input) {
-        input_binary = hex2bin(input);
-        keccak1600(input_binary, digest_size, digest_binary);
+        uint8_t *input_binary = hex2bin(input);
+        keccak(input_binary, input.size()/2, digest_binary, digest_size);
+        delete[] input_binary;
         return bin2hex(digest_binary, digest_size);
     }
 };
@@ -96,9 +97,11 @@ public:
     KeccakFTest() : HashShitFuncTestTemplate() { digest_size = 200; };
 protected:
     string calc(string input) {
-        input_binary = hex2bin(input);
+        uint8_t  *input_binary = hex2bin(input);
         keccakf((uint64_t *)input_binary, 24); // inplace; no need of dig
-        return bin2hex(input_binary, digest_size);
+        string res = bin2hex(input_binary, digest_size);
+        delete[] input_binary;
+        return res;
     }
 };
 

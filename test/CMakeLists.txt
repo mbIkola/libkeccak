@@ -16,6 +16,16 @@ add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR} EXCLUDE_FROM_
 
 #set(test_SRCS '')
 
+#add_custom_target(fixtures)
+#add_custom_command(
+#        TARGET fixtures
+#        COMMAND ${CMAKE_COMMAND} -E copy
+#            ${CMAKE_SOURCE_DIR}/data
+#            ${CMAKE_CURRENT_BINARY_DIR}/data
+#)
+
+file(COPY data DESTINATION .)
+
 add_executable(runUnitTests gtest.cpp ${test_SRCS})
 target_link_libraries(runUnitTests gtest gmock libkeccak)
 add_test(runUnitTests runUnitTests)
