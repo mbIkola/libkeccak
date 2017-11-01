@@ -15,9 +15,9 @@ void hexStringToBytes(const unsigned char * const line, uint8_t * const buffer, 
     size_t i = 0 ;
     unsigned char lo, hi;
     while ( i+1 < lineLength ) {
-        lo = c2i(line[i]);
-        hi = c2i(line[i+1]);
-        buffer[i*2] = (hi << 4) | lo;
+        lo = c2i(line[i*2)]);
+        hi = c2i(line[i*2+1]);
+        buffer[i] = (hi << 4) | lo;
         i++;
     }
 }

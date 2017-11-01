@@ -8,8 +8,10 @@ set(CMAKE_MODULE_PATH
         ${PROJECT_SOURCE_DIR}/cmake
         )
 
-add_library(keccak
-        keccak.c
-        keccak.h)
+include_directories(include)
+
+add_library(libkeccak
+        src/keccak.c
+        include/keccak/keccak.h)
 
 add_subdirectory(test)

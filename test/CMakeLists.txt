@@ -17,5 +17,5 @@ add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR} EXCLUDE_FROM_
 #set(test_SRCS '')
 
 add_executable(runUnitTests gtest.cpp ${test_SRCS})
-target_link_libraries(runUnitTests gtest gmock core)
+target_link_libraries(runUnitTests gtest gmock libkeccak)
 add_test(runUnitTests runUnitTests)
