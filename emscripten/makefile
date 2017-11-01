@@ -6,7 +6,7 @@ EMDOCKER_IMAGE=trzeci/emscripten:sdk-tag-$(EMSCRIPTEN_VERSION)-$(EMSCRIPTEN_BITS
 
 OPTIMIZE+=-O2
 
-CFLAGS +=  -Wall -Werror -fno-strict-aliasing $(OPTIMIZE)
+CFLAGS +=  -Wall -Werror -Iinclude -fno-strict-aliasing $(OPTIMIZE)
 CXXFLAGS += -Wall -Werror --std=c++11 $(OPTIMIZE)
 
 CFLAGS += -msse2
@@ -14,17 +14,18 @@ CFLAGS += -msse2
 EXPORTED_FUNCTIONS=-s EXPORTED_FUNCTIONS='["_keccak1600", "_keccakf", "_keccak"]'
 EMSCRIPTEN_SETTINGS=-s "BINARYEN_METHOD='native-wasm'" -s WASM=1 -s  DISABLE_EXCEPTION_CATCHING=1 \
 				     -s NO_FILESYSTEM=1 $(EXPORTED_FUNCTIONS) \
-				      --post-js emscripten.keccak.post.js
-EM_CC_COMPILER  = docker run -v $(CURDIR):/src $(EMDOCKER_IMAGE) emcc $(EMSCRIPTEN_SETTINGS)
-EM_CXX_COMPILER = docker run -v $(CURDIR):/src $(EMDOCKER_IMAGE) em++ $(EMSCRIPTEN_SETTINGS)
+				      --post-js emscripten/emscripten.keccak.post.js
+EM_CC_COMPILER  = docker run -v $(CURDIR)/../:/src $(EMDOCKER_IMAGE) emcc $(EMSCRIPTEN_SETTINGS)
+EM_CXX_COMPILER = docker run -v $(CURDIR)/../:/src $(EMDOCKER_IMAGE) em++ $(EMSCRIPTEN_SETTINGS)
 
 
-all: clean build/emscripten/keccak.js
+all: clean ../dist/emscripten/keccak.js
 
 
 
-build/emscripten/%.js: %.c
-	$(EM_CC_COMPILER) $(CFLAGS) -o $@ $<
+../dist/emscripten/keccak.js: 
+	@mkdir -p ../dist/emscripten
+	$(EM_CC_COMPILER) $(CFLAGS) -o dist/emscripten/keccak.js src/keccak.c 
 
 clean:
 	rm -f build/emscripten/*
