@@ -9,55 +9,19 @@
 #include "keccak/keccak.h"
 
 
+/**
+ * char 2 int macro.
+ */
 #define c2i(x) (( x>='0' && x<='9' ) ? x-'0' :  ( x>='a' && x<='f' ? 10+x-'a' : 10+x-'A'))
 
 using namespace std;
 
-template < size_t DIGEST_SIZE,  char const*fixture_file_csv >
-class HashShitFuncTestTemplate: public ::testing::Test {
-protected:
-
-    size_t digest_size = DIGEST_SIZE;
-
-    uint8_t *input_binary = NULL;
-    uint8_t *digest_binary = NULL;
-
-    // tuple of message => expected digest
-    typedef std::tr1::tuple<string, string> StringPair;
-    vector<StringPair> fixtures;
+// tuple of message => expected digest
+typedef std::tr1::tuple<string, string> StringPair;
 
 
-    virtual void SetUp() {
-        digest_binary = new uint8_t[digest_size];
-
-        ifstream infile(fixture_file_csv);
-        ASSERT_FALSE(infile.bad());
-
-        string input, expected, line, digest;
-
-        while ( ! getline(infile, line).eof()) {
-            stringstream ss(line);
-            getline(ss, input, ',');
-            getline(ss, expected, ',');
-
-            ASSERT_TRUE(input.length() % 2 == 0);
-            //ASSERT_EQ(input.length(), digest_size * 2);
-
-            fixtures.push_back(StringPair(input, expected));
-        }
-
-    }
-
-    virtual string calc(string input) = 0;
-
-    virtual void TearDown() {
-        if ( digest_binary ) delete[] digest_binary;
-        if ( input_binary ) delete[] input_binary;
-
-        digest_binary = NULL;
-    }
-
-
+class Hex2BinTrait {
+public:
     inline uint8_t *hex2bin( string input) {
 
         uint8_t * res = new uint8_t[input.length() / 2];
@@ -87,12 +51,37 @@ protected:
 
         return hex;
     }
+};
+
+
+class HashShitFuncTestTemplate: public ::testing::TestWithParam<StringPair>, public Hex2BinTrait {
+protected:
+
+    size_t digest_size ;
+
+    uint8_t *input_binary = NULL;
+    uint8_t *digest_binary = NULL;
+
+
+    virtual void SetUp() {
+        digest_binary = new uint8_t[digest_size];
+    }
+    virtual void TearDown() {
+        if ( digest_binary ) delete[] digest_binary;
+        if ( input_binary ) delete[] input_binary;
+
+        digest_binary = NULL;
+    }
+
+
+    virtual string calc(string input) = 0;
 
 };
 
-char keccak1600_fixture[] = "data/keccak1600.csv";
-class Keccak1600Test : public HashShitFuncTestTemplate<200, keccak1600_fixture> {
 
+class Keccak1600Test : public HashShitFuncTestTemplate {
+public:
+    Keccak1600Test() : HashShitFuncTestTemplate() { digest_size = 200; };
 protected:
     string calc(string input) {
         input_binary = hex2bin(input);
@@ -102,8 +91,10 @@ protected:
 };
 
 
-char keccakf_fixture[] = "data/keccakf.csv";
-class KeccakFTest :  public HashShitFuncTestTemplate<200, keccakf_fixture> {
+class KeccakFTest :  public HashShitFuncTestTemplate {
+public:
+    KeccakFTest() : HashShitFuncTestTemplate() { digest_size = 200; };
+protected:
     string calc(string input) {
         input_binary = hex2bin(input);
         keccakf((uint64_t *)input_binary, 24); // inplace; no need of dig
@@ -111,23 +102,30 @@ class KeccakFTest :  public HashShitFuncTestTemplate<200, keccakf_fixture> {
     }
 };
 
-TEST_F(Keccak1600Test, defaultFixturesTest) {
-    string inputMessage, expectedDigest;
 
-    for ( auto const &pair : fixtures) {
-        std::tie(inputMessage, expectedDigest) = pair;
-        EXPECT_EQ(inputMessage, expectedDigest);
-    }
+
+
+
+TEST_P(KeccakFTest, defaultFixturesTest) {
+
+    string inputMessage, expectedDigest;
+    std::tie(inputMessage, expectedDigest) = GetParam();
+
+    string calculatedDigest = calc(inputMessage);
+
+    EXPECT_EQ(calculatedDigest, expectedDigest);
 }
 
-TEST_F(KeccakFTest, defaultFixturesTest) {
-    string inputMessage, expectedDigest;
 
-    for ( auto const &pair : fixtures) {
-        std::tie(inputMessage, expectedDigest) = pair;
-        EXPECT_EQ(inputMessage, expectedDigest);
-    }
+TEST_P(Keccak1600Test, defaultFixturesTest) {
+    string inputMessage, expectedDigest;
+    std::tie(inputMessage, expectedDigest) = GetParam();
+
+    string calculatedDigest = calc(inputMessage);
+
+    EXPECT_EQ(calculatedDigest, expectedDigest);
 }
+
 
 
 
@@ -138,8 +136,45 @@ TEST(sample_test_case, sample_test)
     EXPECT_NE("42", "Answer to the Ultimate Question of Life, the Universe, and Everything");
 }
 
+class FixturesCSVLoader {
+public:
+    static vector<StringPair> load( const char *path_to_csv_file ) {
+
+
+        ifstream infile(path_to_csv_file);
+        assert(infile.good());
+
+        string input, expected, line, digest;
+        vector<StringPair> fixtures;
+
+        while ( ! getline(infile, line).eof()) {
+            if ( line[line.size()-1] == '\r')  {
+                line.resize(line.size() - 1); // dirty hach against CRLF/CR/LF line ending handling in ::std::getline
+            }
+
+            stringstream ss(line);
+            getline(ss, input, ',');
+            getline(ss, expected, ',');
+
+            assert(input.length() % 2 == 0);
+            //ASSERT_EQ(input.length(), digest_size * 2);
+
+            fixtures.push_back(StringPair(input, expected));
+        }
+        return fixtures;
+
+    }
+};
+
+auto keccakfFixtures = FixturesCSVLoader::load("data/keccakf.csv");
+INSTANTIATE_TEST_CASE_P(defaultFixturesTest, KeccakFTest, ::testing::ValuesIn(keccakfFixtures));
+
+auto keccak1600Fixtures = FixturesCSVLoader::load("data/keccak1600.csv");
+INSTANTIATE_TEST_CASE_P(defaultFixturesTest, Keccak1600Test, ::testing::ValuesIn(keccak1600Fixtures));
 
 int main(int args, char **argv) {
     ::testing::InitGoogleTest(&args, argv);
+
+
     return RUN_ALL_TESTS();
 }
