@@ -1,0 +1,31 @@
+{
+  "name": "libkeccak-wasm",
+  "version": "1.0.0",
+  "description": "Keccak.js hash (aka SHA3) library as WASM module. ",
+  "main": "dist/index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "npm run test",
+    "build-wa" : "wa compile -D __WEBASSEMBLY__ -l -O src/keccak.c -I./include -o ./dist/wa/keccak.wasm"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mbIkola/libkeccak.git"
+  },
+  "keywords": [
+    "keccak",
+    "wasm",
+    "webassembly"
+  ],
+  "author": "Nickolay \"mbIkola\" Kharchevin <kharchevyn@gmail.com>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mbIkola/libkeccak/issues"
+  },
+  "homepage": "https://github.com/mbIkola/libkeccak#readme",
+  "devDependencies": {
+    "webassembly": "^0.11.0"
+  }
+}

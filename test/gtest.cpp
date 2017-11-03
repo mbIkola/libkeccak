@@ -178,6 +178,5 @@ INSTANTIATE_TEST_CASE_P(defaultFixturesTest, Keccak1600Test, ::testing::ValuesIn
 int main(int args, char **argv) {
     ::testing::InitGoogleTest(&args, argv);
 
-
     return RUN_ALL_TESTS();
 }
