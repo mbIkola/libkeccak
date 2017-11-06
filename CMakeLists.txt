@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.9)
-project(keccak)
+project(libkeccak)
 
 set(CMAKE_CXX_STANDARD 11)
 
@@ -18,4 +18,5 @@ add_library(libkeccak
         src/keccak.c
         include/keccak/keccak.h)
 
-add_subdirectory(test)
+
+add_subdirectory(test ./tests/${PROJECT_NAME} EXCLUDE_FROM_ALL)
