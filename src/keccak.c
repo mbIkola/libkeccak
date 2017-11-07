@@ -62,6 +62,9 @@ __attribute__((used)) void keccakf(uint64_t st[25], int rounds)
 			st[i + 20] ^= t;
 		}
 
+
+#ifndef NO_EXPERIMENTS_TAKE_IT_ANSI
+        // actually this implementation is faster than unrolled loop
 		// Rho Pi
 		t = st[1];
 		for (i = 0; i < 24; ++i) {
@@ -70,6 +73,39 @@ __attribute__((used)) void keccakf(uint64_t st[25], int rounds)
 			t = bc[0];
 		}
 
+#else
+        // Rho Pi
+        // incline cycle manually cuz sometimes compiler dont do it.
+        t = st[1];
+        st[ 1] = ROTL64(st[ 6], 44);
+        st[ 6] = ROTL64(st[ 9], 20);
+        st[ 9] = ROTL64(st[22], 61);
+        st[22] = ROTL64(st[14], 39);
+        st[14] = ROTL64(st[20], 18);
+        st[20] = ROTL64(st[ 2], 62);
+        st[ 2] = ROTL64(st[12], 43);
+        st[12] = ROTL64(st[13], 25);
+        st[13] = ROTL64(st[19],  8);
+        st[19] = ROTL64(st[23], 56);
+        st[23] = ROTL64(st[15], 41);
+        st[15] = ROTL64(st[ 4], 27);
+        st[ 4] = ROTL64(st[24], 14);
+        st[24] = ROTL64(st[21],  2);
+        st[21] = ROTL64(st[ 8], 55);
+        st[ 8] = ROTL64(st[16], 45);
+        st[16] = ROTL64(st[ 5], 36);
+        st[ 5] = ROTL64(st[ 3], 28);
+        st[ 3] = ROTL64(st[18], 21);
+        st[18] = ROTL64(st[17], 15);
+        st[17] = ROTL64(st[11], 10);
+        st[11] = ROTL64(st[ 7],  6);
+        st[ 7] = ROTL64(st[10],  3);
+        st[10] = ROTL64(t, 1);
+
+#endif
+
+
+#ifndef NO_EXPERIMENTS_TAKE_IT_ANSI
 		//  Chi
 		for (j = 0; j < 25; j += 5) {
 			bc[0] = st[j    ];
@@ -83,6 +119,62 @@ __attribute__((used)) void keccakf(uint64_t st[25], int rounds)
 			st[j + 3] ^= (~bc[4]) & bc[0];
 			st[j + 4] ^= (~bc[0]) & bc[1];
 		}
+#else
+        // unrolled loop, where only last iteration is different
+        j = 0;
+        bc[0] = st[j    ];
+        bc[1] = st[j + 1];
+
+        st[j    ] ^= (~st[j + 1]) & st[j + 2];
+        st[j + 1] ^= (~st[j + 2]) & st[j + 3];
+        st[j + 2] ^= (~st[j + 3]) & st[j + 4];
+        st[j + 3] ^= (~st[j + 4]) & bc[0];
+        st[j + 4] ^= (~bc[0]) & bc[1];
+
+        j = 5;
+        bc[0] = st[j    ];
+        bc[1] = st[j + 1];
+
+        st[j    ] ^= (~st[j + 1]) & st[j + 2];
+        st[j + 1] ^= (~st[j + 2]) & st[j + 3];
+        st[j + 2] ^= (~st[j + 3]) & st[j + 4];
+        st[j + 3] ^= (~st[j + 4]) & bc[0];
+        st[j + 4] ^= (~bc[0]) & bc[1];
+
+        j = 10;
+        bc[0] = st[j    ];
+        bc[1] = st[j + 1];
+
+        st[j    ] ^= (~st[j + 1]) & st[j + 2];
+        st[j + 1] ^= (~st[j + 2]) & st[j + 3];
+        st[j + 2] ^= (~st[j + 3]) & st[j + 4];
+        st[j + 3] ^= (~st[j + 4]) & bc[0];
+        st[j + 4] ^= (~bc[0]) & bc[1];
+
+        j = 15;
+        bc[0] = st[j    ];
+        bc[1] = st[j + 1];
+
+        st[j    ] ^= (~st[j + 1]) & st[j + 2];
+        st[j + 1] ^= (~st[j + 2]) & st[j + 3];
+        st[j + 2] ^= (~st[j + 3]) & st[j + 4];
+        st[j + 3] ^= (~st[j + 4]) & bc[0];
+        st[j + 4] ^= (~bc[0]) & bc[1];
+
+        j = 20;
+        bc[0] = st[j    ];
+        bc[1] = st[j + 1];
+        bc[2] = st[j + 2];
+        bc[3] = st[j + 3];
+        bc[4] = st[j + 4];
+
+        st[j    ] ^= (~bc[1]) & bc[2];
+        st[j + 1] ^= (~bc[2]) & bc[3];
+        st[j + 2] ^= (~bc[3]) & bc[4];
+        st[j + 3] ^= (~bc[4]) & bc[0];
+        st[j + 4] ^= (~bc[0]) & bc[1];
+
+#endif
 
 		//  Iota
 		st[0] ^= keccakf_rndc[round];
@@ -92,7 +184,8 @@ __attribute__((used)) void keccakf(uint64_t st[25], int rounds)
 // compute a keccak hash (md) of given byte length from "in"
 typedef uint64_t state_t[25];
 
-__attribute__((used)) void keccak(const uint8_t *in, int inlen, uint8_t *md, int mdlen)
+__attribute__((used))  __attribute__((visibility("default")))
+void keccak(const uint8_t *in, int inlen, uint8_t *md, int mdlen)
 {
 	state_t st;
 	uint8_t temp[144];
