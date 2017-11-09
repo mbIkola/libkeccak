@@ -2,8 +2,6 @@
 // 19-Nov-11  Markku-Juhani O. Saarinen <mjos@iki.fi>
 // A baseline Keccak (3rd round) implementation.
 
-#include <stdint.h>
-#include <memory.h>
 #include "keccak/keccak.h"
 
 #define HASH_DATA_AREA 136
@@ -12,6 +10,23 @@
 #ifndef ROTL64
 #define ROTL64(x, y) (((x) << (y)) | ((x) >> (64 - (y))))
 #endif
+
+#ifdef __WEBASSEMBLY__
+#pragma message "Building for webassembly arch....."
+#include "webassembly.h"
+extern void *memcpy(void *dest, const void *src, size_t n);
+extern void *memset(void *s, int c, size_t n);
+#else
+#include <memory.h>
+#endif
+
+#ifdef __EMSCRIPTEN__
+#include "emscripten.h"
+#else
+#define EMSCRIPTEN_KEEPALIVE
+#endif
+
+
 
 const uint64_t keccakf_rndc[24] =
 {
@@ -184,8 +199,8 @@ __attribute__((used)) void keccakf(uint64_t st[25], int rounds)
 // compute a keccak hash (md) of given byte length from "in"
 typedef uint64_t state_t[25];
 
-__attribute__((used))  __attribute__((visibility("default")))
-void keccak(const uint8_t *in, int inlen, uint8_t *md, int mdlen)
+void  __attribute__((used))  __attribute__((visibility("default"))) EMSCRIPTEN_KEEPALIVE
+keccak(const uint8_t *in, int inlen, uint8_t *md, int mdlen)
 {
 	state_t st;
 	uint8_t temp[144];
@@ -216,7 +231,8 @@ void keccak(const uint8_t *in, int inlen, uint8_t *md, int mdlen)
 	memcpy(md, st, mdlen);
 }
 
-__attribute__((used)) void keccak1600(const uint8_t *in, int inlen, uint8_t * const md)
+void __attribute__((used))  __attribute__((visibility("default"))) EMSCRIPTEN_KEEPALIVE
+keccak1600(const uint8_t *in, int inlen, uint8_t * const md)
 {
 	keccak(in, inlen, md, sizeof(state_t));
 }

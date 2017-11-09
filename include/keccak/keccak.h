@@ -10,10 +10,13 @@
 extern "C" {
 #endif
 
+__attribute__((visibility ("default"))) __attribute__((used))
 void keccak(const uint8_t *in, int inlen, uint8_t *md, int mdlen);
 
+__attribute__((visibility ("default"))) __attribute__((used))
 void keccakf(uint64_t st[25], int norounds);
 
+__attribute__((visibility ("default"))) __attribute__((used))
 void keccak1600(const uint8_t *in, int inlen, uint8_t *md);
 
 #ifdef __cplusplus

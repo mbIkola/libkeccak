@@ -8,5 +8,12 @@ static library which would be used for further iterative modifications/optimizat
 # howto
 Dunno. `cmake .` and `make ` should work for you. CLion should autogenerate build targets if you import project from source. 
 
+```
+$ mkdir Release
+$ cd Release
+$ cmake -DCMAKE_BUILD_TYPE=Release ..
+$ make 
+```
+
 
 
