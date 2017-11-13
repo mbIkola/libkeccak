@@ -1,0 +1,4 @@
+test/data/keccak1600.json filter=lfs diff=lfs merge=lfs -text
+test/data/keccakf.csv filter=lfs diff=lfs merge=lfs -text
+test/data/keccakf.json filter=lfs diff=lfs merge=lfs -text
+test/data/keccak1600.csv filter=lfs diff=lfs merge=lfs -text
