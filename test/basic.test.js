@@ -88,7 +88,9 @@ describe('Array', () => {
             printErr : (...err) => {
                 console.error("======= Someting goes wrong: ", err);
                 console.error("=======", err);
-                done(err);
+            },
+            print : (msg) => {
+                console.debug("Message from moduke : " + msg);
             },
             onRuntimeInitialized : void(0),
             setStatus : (statusText) => {
@@ -101,6 +103,11 @@ describe('Array', () => {
             Module.onRuntimeInitialized = resolve;
             Module.onError = reject;
         });
+        var fixtures = {
+            "keccak1600" : require('./data/keccak1600.json'),
+            "keccakf" : require('./data/keccakf.json')
+        };
+
         function injectScript(src)  {
             return new Promise( (resolve, reject) => {
                 var d = document, s = d.createElement('script');
@@ -115,12 +122,13 @@ describe('Array', () => {
 
 
         before( (done) => {
-           injectScript("/base/dist/emscripten/keccak.js")
-               .then( res => runtimeInitializedPromise.then( () => {
-                    console.info("Runtime initialized. ");
-                    done();
-               }))
-               .catch( err => done(err));
+            var promises = [
+                injectScript("/base/dist/emscripten/keccak.js")
+                   .then( res => runtimeInitializedPromise.then( () => {
+                        console.info("Runtime initialized. ");
+                   }))
+            ];
+            Promise.all(promises).then(() => done() ).catch(err => done(err));
         });
 
         it("#exportedFunctions", () => {
@@ -145,7 +153,68 @@ describe('Array', () => {
             expect(Module._selfTest2(42)).to.be.eq(42);
         });
 
+        const hashtable = "0123456789abcdef";
 
+        /*** HASH message using sha-3 and return hex-encoded string of digest
+         *
+         * @param hexmessage hex-encoded byte-string (2 chars per byte, lowercase) of input message
+         * @returns {string} hex-encoded byte-string of calculated digest (200 bytes)
+         */
+        function keccak1600(hexmessage) {
+            const stack = Runtime.stackSave();
+
+            var msg = hexmessage.match(/.{2}/g).map(a => parseInt('0x'+a));
+            const typedMsg = new Uint8Array(msg);
+            const inputStack = Runtime.stackAlloc(typedMsg.length);
+            HEAP8.set(typedMsg, inputStack);
+
+            var output = new Uint8Array(200);
+            const outStack = Runtime.stackAlloc(output.length);
+            HEAPU8.set(output, outStack);
+
+            Module._keccak1600(inputStack, typedMsg.length, outStack);
+
+            const res = Array.from( new Uint8Array(HEAPU8.buffer, outStack, 200))
+                .map( a => hashtable[(a & 0xf0) >> 4] + hashtable[(a & 0x0f)] )
+                .join('');
+
+            Runtime.stackRestore(stack);
+            return res;
+        }
+
+        function keccakf(hexmessage) {
+            const stack = Runtime.stackSave();
+
+            var msg = hexmessage.match(/.{2}/g).map(a => parseInt('0x'+a));
+            const typedMsg = new Uint8Array(msg);
+            const inputStack = Runtime.stackAlloc(typedMsg.length);
+            HEAP8.set(typedMsg, inputStack);
+
+            Module._keccakf(inputStack, 24);
+            const res = Array.from( new Uint8Array(HEAPU8.buffer, inputStack, 200))
+                .map( a => hashtable[(a & 0xf0) >> 4] + hashtable[(a & 0x0f)] )
+                .join('');
+
+            Runtime.stackRestore(stack);
+            return res;
+        }
+
+        function singleTest(message, func, expectedDigest) {
+            output = func(message);
+            expect(output).to.equal(expectedDigest);
+        }
+
+        fixtures.keccak1600.forEach( test => {
+            it("Should generate " + test.digest + " for " + test.message, () => {
+                singleTest(test.message, keccak1600, test.digest);
+            });
+        });
+
+        fixtures.keccakf.forEach( test => {
+            it("Should generate " + test.digest + " for 24 rounds of " + test.message, () => {
+                singleTest(test.message, keccakf, test.digest);
+            });
+        })
 
     });
 });

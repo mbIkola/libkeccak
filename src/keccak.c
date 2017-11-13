@@ -235,7 +235,15 @@ keccak(const uint8_t *in, int inlen, uint8_t *md, int mdlen)
 void __attribute__((used))  __attribute__((visibility("default"))) EMSCRIPTEN_KEEPALIVE
 keccak1600(const uint8_t *in, int inlen, uint8_t * const md)
 {
+
 	keccak(in, inlen, md, sizeof(state_t));
+//    for ( size_t i=0; i<inlen; i++) {
+//        EM_ASM_({ Module.print('Input[' + $0 + ']==' + $1 ); }, i, in[i]);
+//    }
+//    for ( size_t i=0; i<200; i++) {
+//        EM_ASM_({ Module.print('Output[' + $0 + ']==' + $1 ); }, i, md[i]);
+//    }
+
 }
 
 
@@ -266,3 +274,5 @@ int selfTest(int notpizdec) {
 
     return notpizdec ;
 }
+
+

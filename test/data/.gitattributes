@@ -1,0 +1,4 @@
+./keccak1600.csv filter=lfs diff=lfs merge=lfs -text
+./keccakf.csv filter=lfs diff=lfs merge=lfs -text
+./keccak1600.json filter=lfs diff=lfs merge=lfs -text
+./keccakf.json filter=lfs diff=lfs merge=lfs -text
