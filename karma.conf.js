@@ -2,14 +2,18 @@ module.exports = function(config) {
 
     config.set({
         basePath : "./",
-        frameworks: ['browserify', 'mocha', 'chai'],
+        frameworks: ['browserify', 'mocha',  'chai'],
         files: [
             {pattern: 'test/**/*.js', watched: true, served: true, included: true},
             {pattern: 'dist/**/*.*', watched: true, served: true, included: false, nocache: true},
             {pattern: 'test/**/*.json', watched: true, served: true, included: false, nocache: true}
         ],
+
         preprocessors: {
             'test/**/*.js' : ['browserify']
+        },
+        mime : {
+            'application/wasm': ['wasm']
         },
         browserify: {
             debug: true,

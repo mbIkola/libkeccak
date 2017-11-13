@@ -8,8 +8,8 @@
   },
   "scripts": {
     "test": "karma start --single-run  --browsers ChromeHeadless karma.conf.js",
-    "test:watch" : "karma start --auto-watch --browsers ChromeHeadless karma.conf.js",
-    "testlive:watch" : "karma start --auto-watch --browsers Chrome karma.conf.js",
+    "test:watch": "karma start --auto-watch --browsers ChromeHeadless karma.conf.js",
+    "testlive:watch": "karma start --auto-watch --browsers Chrome karma.conf.js",
     "build-wa": "wa compile -D __WEBASSEMBLY__ -l -O src/keccak.c -I./include -o ./dist/wa/keccak.wasm"
   },
   "repository": {
@@ -31,11 +31,14 @@
     "brfs": "^1.4.3",
     "browserify": "^14.5.0",
     "chai": "^4.1.2",
+    "chai-as-promised": "^7.1.1",
     "karma": "^1.7.1",
     "karma-browserify": "^5.1.1",
     "karma-chai": "^0.1.0",
+    "karma-chai-as-promised": "^0.1.2",
     "karma-chrome-launcher": "^2.2.0",
     "karma-mocha": "^1.3.0",
+    "mime-db": "^1.31.0",
     "mocha": "^4.0.1",
     "watchify": "^3.9.0",
     "webassembly": "^0.11.0"

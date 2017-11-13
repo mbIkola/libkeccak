@@ -1,3 +1,5 @@
+
+
 describe('Array', () => {
     describe('Karma Working', () => {
         it('Карма должна уметь стартовать браузер, инъектить в него чай с мочой и запускать тесты', () => {
@@ -5,7 +7,7 @@ describe('Array', () => {
             assert.equal(-1, [1, 2, 3].indexOf(4));
         });
     });
-    describe.skip('webassembly', () => {
+    describe('webassembly', () => {
         it("Should be able to load WASM module", (done) => {
             let responseStatus = 404;
             fetch('/wa/keccak.wasm')
@@ -29,9 +31,10 @@ describe('Array', () => {
 
         });
 
-        it("Should be able to compile and link WASM module", (done) => {
+        it("Should be able to compile and link WASM module via WebAssembly Loader", (done) => {
 
            const wa = require('webassembly');
+
 
            const promise = wa.load('/wa/keccak.wasm')
                .then(module => {
@@ -53,7 +56,7 @@ describe('Array', () => {
                    }
                });
 
-           promise.then(done, done);
+           promise.then(done, err => done(err));
         });
     });
     describe('test fixtures', () => {
@@ -76,21 +79,72 @@ describe('Array', () => {
     });
 
     describe('test emscripten', () => {
+        var Module =  {
+            ENVIRONMENT : "WEB",
+            preRun: [],
+            noExitRuntime : true,
+            postRun: [ function() { console.error("postrun function"); }],
+            wasmBinaryFile : '/base/dist/emscripten/keccak.wasm',
+            printErr : (...err) => {
+                console.error("======= Someting goes wrong: ", err);
+                console.error("=======", err);
+                done(err);
+            },
+            onRuntimeInitialized : void(0),
+            setStatus : (statusText) => {
+                if ( statusText.length > 0 ) console.info("Loading status:  " + statusText);
+            }
 
-        it("Should be able to require(..) emscripten wrapper", (done) => {
-            var KeccakModule;
-            expect( () => KeccakModule = require('../dist/emscripten/keccak')).to.not.throw();
-            done();
+        };
+        window.Module = Module;
+        var runtimeInitializedPromise = new Promise( function(resolve, reject) {
+            Module.onRuntimeInitialized = resolve;
+            Module.onError = reject;
         });
-        it("Should be able to instantiate", (done) => {
-           expect( () => {
-               var KeccakModule = require('../dist/emscripten/keccak');
+        function injectScript(src)  {
+            return new Promise( (resolve, reject) => {
+                var d = document, s = d.createElement('script');
+                s.async = true; s.src = src; s.type = "text/javascript";
+                s.onerror = reject; s.onload =  resolve;
+                d.head.appendChild(s);
+            });
+        }
+
+        console.info("====================        EMSCRIPTEN SUITE  =========================" +
+                     "12345678".split(/./ig).map(a => "\r\n").join(""));
 
 
-               console.log("Instance created : " , KeccakModule())
-           } ).to.not.throw();
-           done();
+        before( (done) => {
+           injectScript("/base/dist/emscripten/keccak.js")
+               .then( res => runtimeInitializedPromise.then( () => {
+                    console.info("Runtime initialized. ");
+                    done();
+               }))
+               .catch( err => done(err));
         });
+
+        it("#exportedFunctions", () => {
+            let exports = ["selfTest", "selfTest2", "keccak", "keccakf", "keccak1600"];
+
+            exports.map( expectedExportedFunction => {
+                expect(Module["_" + expectedExportedFunction], "#" + expectedExportedFunction + "() doesnt exported. ")
+                    .to.be.an.instanceof(Function);
+            });
+        });
+
+
+        it("#selfTest", () => {
+            // function _selfTest(isNotPizdec) returning (int)isNotPizdec if everything ok,
+            // and ~isNotPizdec (bitwise not ) otherwise.
+            expect(Module._selfTest(42)).to.be.eq(42);
+        });
+
+        it("#selfTest2", () => {
+            // function _selfTest(isNotPizdec) returning (int)isNotPizdec if everything ok,
+            // and ~isNotPizdec (bitwise not ) otherwise.
+            expect(Module._selfTest2(42)).to.be.eq(42);
+        });
+
 
 
     });

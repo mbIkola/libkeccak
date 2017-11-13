@@ -19,6 +19,12 @@ void keccakf(uint64_t st[25], int norounds);
 __attribute__((visibility ("default"))) __attribute__((used))
 void keccak1600(const uint8_t *in, int inlen, uint8_t *md);
 
+__attribute__((visibility ("default"))) __attribute__((used))
+int selfTest(int pizdec);
+
+__attribute__((visibility ("default"))) __attribute__((used))
+int selfTest2(int pizdec);
+
 #ifdef __cplusplus
 }
 #endif

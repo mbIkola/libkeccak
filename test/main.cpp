@@ -22,7 +22,7 @@ typedef std::tr1::tuple<string, string> StringPair;
 
 class Hex2BinTrait {
 public:
-    inline uint8_t *hex2bin( string input) {
+    static inline uint8_t *hex2bin( string input) {
 
         uint8_t * res = new uint8_t[input.length() / 2];
         memset(res, 0, input.length()/2);
@@ -37,7 +37,7 @@ public:
         return res;
     }
 
-    inline string bin2hex( uint8_t *bin, size_t length ) {
+    static inline string bin2hex( uint8_t *bin, size_t length ) {
         static const char hextable[] = "0123456789abcdef";
         string hex;
 
@@ -174,6 +174,8 @@ INSTANTIATE_TEST_CASE_P(defaultFixturesTest, KeccakFTest, ::testing::ValuesIn(ke
 
 auto keccak1600Fixtures = FixturesCSVLoader::load("data/keccak1600.csv");
 INSTANTIATE_TEST_CASE_P(defaultFixturesTest, Keccak1600Test, ::testing::ValuesIn(keccak1600Fixtures));
+
+
 
 int main(int args, char **argv) {
     ::testing::InitGoogleTest(&args, argv);
