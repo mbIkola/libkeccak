@@ -1,4 +1,4 @@
-
+const Keccak = require('./../dist/emscripten/keccak.js');
 
 describe('Array', () => {
     describe('Karma Working', () => {
@@ -7,7 +7,7 @@ describe('Array', () => {
             assert.equal(-1, [1, 2, 3].indexOf(4));
         });
     });
-    describe('webassembly', () => {
+    describe.skip('webassembly', () => {
         it("Should be able to load WASM module", (done) => {
             let responseStatus = 404;
             fetch('/wa/keccak.wasm')
@@ -59,26 +59,10 @@ describe('Array', () => {
            promise.then(done, err => done(err));
         });
     });
-    describe('test fixtures', () => {
-        function load(fname) {
-            return it("Should be able to load and parse JSON text fixtures: " + fname, (done) => {
-                fetch('/data/' + fname )
-                    .then(response => {
-                        expect(response.status).to.be.eq(200);
-                        return response.json();
-                    })
-                    .then(fixtures => {
-                        expect(fixtures).to.be.an('array').that.not.empty;
-                    }).then(done, done);
-
-
-            });
-        }
-        load('keccak1600.json');
-        load('keccakf.json');
-    });
 
     describe('test emscripten', () => {
+
+
         var Module =  {
             ENVIRONMENT : "WEB",
             preRun: [],
@@ -86,11 +70,10 @@ describe('Array', () => {
             postRun: [ function() { console.error("postrun function"); }],
             wasmBinaryFile : '/base/dist/emscripten/keccak.wasm',
             printErr : (...err) => {
-                console.error("======= Someting goes wrong: ", err);
-                console.error("=======", err);
+                console.error("[Keccak.wasm] : ", err)
             },
-            print : (msg) => {
-                console.debug("Message from moduke : " + msg);
+            print : (...msg) => {
+                console.debug("[Keccak.wasm] : ", msg);
             },
             onRuntimeInitialized : void(0),
             setStatus : (statusText) => {
@@ -98,7 +81,7 @@ describe('Array', () => {
             }
 
         };
-        window.Module = Module;
+        //window.Module = Module;
         var runtimeInitializedPromise = new Promise( function(resolve, reject) {
             Module.onRuntimeInitialized = resolve;
             Module.onError = reject;
@@ -121,17 +104,24 @@ describe('Array', () => {
                      "12345678".split(/./ig).map(a => "\r\n").join(""));
 
 
-        before( (done) => {
-            var promises = [
-                injectScript("/base/dist/emscripten/keccak.js")
-                   .then( res => runtimeInitializedPromise.then( () => {
-                        console.info("Runtime initialized. ");
-                   }))
-            ];
-            Promise.all(promises).then(() => done() ).catch(err => done(err));
-        });
+        // before( (done) => {
+        //     var promises = [
+        //         injectScript("/base/dist/emscripten/keccak.js")
+        //            .then( res => runtimeInitializedPromise.then( () => {
+        //                 console.info("Runtime initialized. ");
+        //            }))
+        //     ];
+        //     Promise.all(promises).then(() => done() ).catch(err => done(err));
+        //     done();
+        // });
+        //
+
+        var keccakModule = new Keccak(Module);
+        before( (done) => { runtimeInitializedPromise.then(done).catch( err => done(err) ) ; }) ;
 
         it("#exportedFunctions", () => {
+
+
             let exports = ["selfTest", "selfTest2", "keccak", "keccakf", "keccak1600"];
 
             exports.map( expectedExportedFunction => {
@@ -144,13 +134,13 @@ describe('Array', () => {
         it("#selfTest", () => {
             // function _selfTest(isNotPizdec) returning (int)isNotPizdec if everything ok,
             // and ~isNotPizdec (bitwise not ) otherwise.
-            expect(Module._selfTest(42)).to.be.eq(42);
+            expect(keccakModule._selfTest(42)).to.be.eq(42);
         });
 
         it("#selfTest2", () => {
             // function _selfTest(isNotPizdec) returning (int)isNotPizdec if everything ok,
             // and ~isNotPizdec (bitwise not ) otherwise.
-            expect(Module._selfTest2(42)).to.be.eq(42);
+            expect(keccakModule._selfTest2(42)).to.be.eq(42);
         });
 
         const hashtable = "0123456789abcdef";
@@ -161,41 +151,41 @@ describe('Array', () => {
          * @returns {string} hex-encoded byte-string of calculated digest (200 bytes)
          */
         function keccak1600(hexmessage) {
-            const stack = Runtime.stackSave();
+            const stack = keccakModule.Runtime.stackSave();
 
             var msg = hexmessage.match(/.{2}/g).map(a => parseInt('0x'+a));
             const typedMsg = new Uint8Array(msg);
-            const inputStack = Runtime.stackAlloc(typedMsg.length);
-            HEAP8.set(typedMsg, inputStack);
+            const inputStack = keccakModule.Runtime.stackAlloc(typedMsg.length);
+            keccakModule.HEAP8.set(typedMsg, inputStack);
 
             var output = new Uint8Array(200);
-            const outStack = Runtime.stackAlloc(output.length);
-            HEAPU8.set(output, outStack);
+            const outStack = keccakModule.Runtime.stackAlloc(output.length);
+            keccakModule.HEAPU8.set(output, outStack);
 
-            Module._keccak1600(inputStack, typedMsg.length, outStack);
+            keccakModule._keccak1600(inputStack, typedMsg.length, outStack);
 
-            const res = Array.from( new Uint8Array(HEAPU8.buffer, outStack, 200))
+            const res = Array.from( new Uint8Array(keccakModule.HEAPU8.buffer, outStack, 200))
                 .map( a => hashtable[(a & 0xf0) >> 4] + hashtable[(a & 0x0f)] )
                 .join('');
 
-            Runtime.stackRestore(stack);
+            keccakModule.Runtime.stackRestore(stack);
             return res;
         }
 
         function keccakf(hexmessage) {
-            const stack = Runtime.stackSave();
+            const stack = keccakModule.Runtime.stackSave();
 
             var msg = hexmessage.match(/.{2}/g).map(a => parseInt('0x'+a));
             const typedMsg = new Uint8Array(msg);
-            const inputStack = Runtime.stackAlloc(typedMsg.length);
-            HEAP8.set(typedMsg, inputStack);
+            const inputStack = keccakModule.Runtime.stackAlloc(typedMsg.length);
+            keccakModule.HEAP8.set(typedMsg, inputStack);
 
-            Module._keccakf(inputStack, 24);
-            const res = Array.from( new Uint8Array(HEAPU8.buffer, inputStack, 200))
+            keccakModule._keccakf(inputStack, 24);
+            const res = Array.from( new Uint8Array(keccakModule.HEAPU8.buffer, inputStack, 200))
                 .map( a => hashtable[(a & 0xf0) >> 4] + hashtable[(a & 0x0f)] )
                 .join('');
 
-            Runtime.stackRestore(stack);
+            keccakModule.Runtime.stackRestore(stack);
             return res;
         }
 
@@ -209,6 +199,7 @@ describe('Array', () => {
                 singleTest(test.message, keccak1600, test.digest);
             });
         });
+
 
         fixtures.keccakf.forEach( test => {
             it("Should generate " + test.digest + " for 24 rounds of " + test.message, () => {
